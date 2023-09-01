@@ -3,11 +3,13 @@ package db;
 import entities.UserEntity;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.vertx.core.AbstractVerticle;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.http.HttpServer;
 import io.vertx.mutiny.ext.web.Router;
 import io.vertx.mutiny.ext.web.RoutingContext;
 import io.vertx.mutiny.ext.web.handler.BodyHandler;
+import io.vertx.mutiny.micrometer.PrometheusScrapingHandler;
 import jakarta.persistence.Persistence;
 import org.hibernate.reactive.mutiny.Mutiny;
 
@@ -36,21 +38,25 @@ public class MainVerticle extends AbstractVerticle {
 
     router.get("/user/:id").respond(this::findUser);
     router.get("/users").respond(this::list);
-    router.post("/user").respond(this::insertUser)
-        .failureHandler((rc) -> {
-          rc.failure().printStackTrace();
-        });
+    router.post("/user").respond(this::insertUser);
     router.put("/user/:id").respond(this::update);
+    router.route("/metrics").handler(this::metrics);
+
 
     Uni<HttpServer> startHttpServer = vertx.createHttpServer()
       .requestHandler(router::handle)
-      .exceptionHandler(Throwable::printStackTrace)
+      .exceptionHandler(throwable -> {
+        System.out.println(throwable.getCause().getMessage());
+      })
       .listen(8080)
       .onItem().invoke(() -> System.out.println("HTTP server started on port 8080"));
 
     return Uni.combine().all().unis(startHibernate, startHttpServer).discardItems();
   }
 
+  private void metrics(RoutingContext rc) {
+    PrometheusScrapingHandler.create().handle(rc);
+  }
 
   private Uni<UserEntity> findUser(RoutingContext routingContext) {
     Long id = Long.valueOf(routingContext.pathParam("id"));
@@ -78,17 +84,13 @@ public class MainVerticle extends AbstractVerticle {
     return emf.withSession(session -> session.createQuery("from UserEntity", UserEntity.class).getResultList());
   }
 
-  private Uni<Void> insertUser(RoutingContext rc) {
-    JsonObject body = rc.body().asJsonObject();
+  private Uni<UserEntity> insertUser(RoutingContext rc) {
+    UserEntity userEntity = rc.body().asJsonObject().mapTo(UserEntity.class);
 
-    String email = body.getString("email");
-    String name = body.getString("name");
-
-    UserEntity userEntity = new UserEntity();
-    userEntity.setEmail(email);
-    userEntity.setName(name);
-
-    return emf.withSession(session -> session.persist(userEntity));
+    return emf.withSession(session -> session.persist(userEntity)
+      .call(session::flush)
+      .replaceWith(userEntity)
+    );
   }
 
 }
