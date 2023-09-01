@@ -9,7 +9,7 @@ COPY pom.xml .
 COPY src src
 
 # Build the Maven project inside the container
-RUN mvn clean package
+RUN mvn clean install
 
 # Copy the compiled JAR file to the container
 COPY target/starter-1-fat.jar .
