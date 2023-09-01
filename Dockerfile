@@ -2,20 +2,25 @@
 FROM maven:3.8.4-openjdk-17-slim
 
 # Set the working directory inside the container
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy the pom.xml and the source code to the container
-COPY pom.xml .
-COPY src src
+# Copy the source code into the container
+COPY src ./src
+COPY pom.xml ./
 
-# Build the Maven project inside the container
-RUN mvn clean install
+# Build the application using Maven
+RUN mvn clean package -X
 
-# Copy the compiled JAR file to the container
-COPY target/starter-1-fat.jar .
 
-# Expose the port your Vert.x application will run on (change as needed)
+
+# Set the working directory inside the runtime container
+WORKDIR /app/target
+
+# Copy the built JAR file from the build container to the runtime container
+#COPY /target/starter-1-fat.jar ./app-fat.jar
+
+# Expose the port your Vert.x application is listening on
 EXPOSE 8080
 
-# Define the command to run your Vert.x application using java -jar
+# Specify the command to run your Vert.x application
 CMD ["java", "-jar", "starter-1-fat.jar"]

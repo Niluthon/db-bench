@@ -12,7 +12,7 @@
 
     <!-- PostgreSQL -->
     <property name="jakarta.persistence.jdbc.url"
-              value="jdbc:postgresql://postgres/vertx"/>
+              value="jdbc:postgresql://localhost/vertx"/>
 
     <!-- Credentials -->
     <property name="jakarta.persistence.jdbc.user"
