@@ -22,5 +22,6 @@ WORKDIR /app/target
 # Expose the port your Vert.x application is listening on
 EXPOSE 8080
 
+
 # Specify the command to run your Vert.x application
 CMD ["java", "-jar", "starter-1-fat.jar"]

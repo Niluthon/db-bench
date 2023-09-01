@@ -17,7 +17,6 @@ public class MainVerticle extends AbstractVerticle {
 
 
   private Mutiny.SessionFactory emf;
-  private Uni<Mutiny.Session> session;
 
   @Override
   public Uni<Void> asyncStart() {
@@ -25,9 +24,6 @@ public class MainVerticle extends AbstractVerticle {
       emf = Persistence
         .createEntityManagerFactory("postgresql-example")
         .unwrap(Mutiny.SessionFactory.class);
-
-      session = emf.openSession();
-
       return Uni.createFrom().voidItem();
     });
 
@@ -40,11 +36,15 @@ public class MainVerticle extends AbstractVerticle {
 
     router.get("/user/:id").respond(this::findUser);
     router.get("/users").respond(this::list);
-    router.post("/user").respond(this::insertUser);
+    router.post("/user").respond(this::insertUser)
+        .failureHandler((rc) -> {
+          rc.failure().printStackTrace();
+        });
     router.put("/user/:id").respond(this::update);
 
     Uni<HttpServer> startHttpServer = vertx.createHttpServer()
       .requestHandler(router::handle)
+      .exceptionHandler(Throwable::printStackTrace)
       .listen(8080)
       .onItem().invoke(() -> System.out.println("HTTP server started on port 8080"));
 
@@ -62,21 +62,20 @@ public class MainVerticle extends AbstractVerticle {
   private Uni<UserEntity> update(RoutingContext rc) {
     Long id = Long.valueOf(rc.pathParam("id"));
 
-    return session.chain(session1 ->
-      session1.find(UserEntity.class, id)
-        .onItem().ifNotNull().transformToUni(userEntity -> {
-          userEntity.setName("New name");
-          userEntity.setEmail("New email");
-          return session1.persist(userEntity).replaceWith(userEntity);
-        })
-    );
+    return emf.withSession(session -> session.find(UserEntity.class, id))
+      .onItem().invoke(userEntity -> {
+        JsonObject body = rc.body().asJsonObject();
+
+        String email = body.getString("email");
+        String name = body.getString("name");
+
+        userEntity.setEmail(email);
+        userEntity.setName(name);
+      });
   }
 
   private Uni<List<UserEntity>> list(RoutingContext rc) {
-    return session.chain(session1 ->
-      session1.createQuery("from UserEntity ", UserEntity.class)
-        .getResultList()
-      );
+    return emf.withSession(session -> session.createQuery("from UserEntity", UserEntity.class).getResultList());
   }
 
   private Uni<Void> insertUser(RoutingContext rc) {
@@ -89,12 +88,7 @@ public class MainVerticle extends AbstractVerticle {
     userEntity.setEmail(email);
     userEntity.setName(name);
 
-    return session.chain(session1 ->
-      session1.persist(userEntity)
-        .replaceWith(
-          rc.response().setStatusCode(201).end()
-        )
-    );
+    return emf.withSession(session -> session.persist(userEntity));
   }
 
 }
