@@ -1,7 +1,6 @@
 package entities;
 
 import jakarta.persistence.*;
-import lombok.Builder;
 import lombok.Data;
 
 import java.util.Objects;
@@ -15,12 +14,15 @@ public class UserEntity {
   private Long id;
 
   @Column
-  private String name;
+  private String login;
 
   @Column
   private String email;
 
+  @Column
+  private String password;
+
   public int hashCode() {
-    return Objects.hash(name, email);
+    return Objects.hash(login, email);
   }
 }

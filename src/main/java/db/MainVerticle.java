@@ -3,7 +3,6 @@ package db;
 import entities.UserEntity;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.vertx.core.AbstractVerticle;
-import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.http.HttpServer;
 import io.vertx.mutiny.ext.web.Router;
@@ -46,7 +45,7 @@ public class MainVerticle extends AbstractVerticle {
     Uni<HttpServer> startHttpServer = vertx.createHttpServer()
       .requestHandler(router::handle)
       .exceptionHandler(throwable -> {
-        System.out.println(throwable.getCause().getMessage());
+        System.out.println(Thread.currentThread() + " : " + throwable.getMessage());
       })
       .listen(8080)
       .onItem().invoke(() -> System.out.println("HTTP server started on port 8080"));
@@ -73,10 +72,10 @@ public class MainVerticle extends AbstractVerticle {
         JsonObject body = rc.body().asJsonObject();
 
         String email = body.getString("email");
-        String name = body.getString("name");
+        String name = body.getString("login");
 
         userEntity.setEmail(email);
-        userEntity.setName(name);
+        userEntity.setLogin(name);
       });
   }
 
