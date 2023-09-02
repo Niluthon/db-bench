@@ -81,7 +81,7 @@ public class MainVerticle extends AbstractVerticle {
   }
 
   private Uni<List<UserEntity>> list(RoutingContext rc) {
-    return emf.withSession(session -> session.createQuery("from UserEntity", UserEntity.class).getResultList());
+    return emf.withSession(session -> session.createQuery("from UserEntity order by id ASC ", UserEntity.class).getResultList());
   }
 
   private Uni<UserEntity> insertUser(RoutingContext rc) {
