@@ -10,6 +10,7 @@ import io.vertx.mutiny.ext.web.RoutingContext;
 import io.vertx.mutiny.ext.web.handler.BodyHandler;
 import io.vertx.mutiny.micrometer.PrometheusScrapingHandler;
 import jakarta.persistence.Persistence;
+import org.hibernate.LockMode;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import java.util.List;
@@ -86,10 +87,15 @@ public class MainVerticle extends AbstractVerticle {
   private Uni<UserEntity> insertUser(RoutingContext rc) {
     UserEntity userEntity = rc.body().asJsonObject().mapTo(UserEntity.class);
 
-    return emf.withSession(session -> session.persist(userEntity)
-      .call(session::flush)
-      .replaceWith(userEntity)
-    );
+    return emf.withSession(session -> {
+
+        session.lock(userEntity, LockMode.PESSIMISTIC_WRITE);
+        return session.persist(userEntity)
+          .call(session::flush)
+          .replaceWith(userEntity);
+
+
+      });
   }
 
 }

@@ -3,7 +3,8 @@ import { sleep } from 'k6';
 
 export default function () {
   // http.get('http://localhost:8080/users');
-  const url = `http://38.242.250.192:8080/user/${Math.round(Math.random() * 95000)}`;
+  // const url = `http://38.242.250.192:8080`;
+  const url = `http://localhost:8080`;
 
   const payload = JSON.stringify(
     {
@@ -18,7 +19,7 @@ export default function () {
     }
   }
 
-  http.post('http://38.242.250.192:8080/user', payload, params);
+  http.post(`${url}/user`, payload, params);
 
   // http.get(url);
 
