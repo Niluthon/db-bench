@@ -42,7 +42,7 @@ public class Main {
       }
     );
 
-    vertx.deployVerticle(MainVerticle.class.getName(), new DeploymentOptions().setInstances(1))
+    vertx.deployVerticle(MainVerticle.class.getName(), new DeploymentOptions().setInstances(4))
       .subscribe().with(
         ok -> System.out.println("MainVerticle deployed"),
         throwable -> System.out.println("MainVerticle failed to deploy")
